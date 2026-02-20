@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitetura Técnica e Fluxo Sistêmico - Centralar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f4; /* stone-100 */
+            color: #1c1917; /* stone-900 */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #e7e5e4; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #78716c; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+
+        /* =========================================
+           LAYOUT DA MATRIZ (ESTÁVEL E AMPLO)
+           ========================================= */
+        .matrix-wrapper {
+            overflow-x: auto;
+            border-radius: 0.75rem;
+            background: white;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e7e5e4;
+            min-height: 0; /* Removido o 70vh forçado */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .matrix-grid {
+            display: grid;
+            /* Coluna esquerda fixa, restantes distribuem o espaço uniformemente */
+            grid-template-columns: 180px repeat(5, minmax(260px, 1fr));
+            /* Linhas com altura flexível para não forçar espaço em branco excessivo */
+            grid-template-rows: auto repeat(4, minmax(150px, 1fr));
+            min-width: 1400px; 
+            flex-grow: 1; 
+        }
+
+        .m-header {
+            background-color: #fafaf9;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #57534e;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-align: center;
+            border-bottom: 2px solid #e7e5e4;
+            border-right: 1px solid #f5f5f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .m-row-header {
+            background-color: #ffffff;
+            padding: 1rem;
+            border-bottom: 1px solid #f5f5f4;
+            border-right: 2px solid #e7e5e4;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            gap: 0.25rem;
+        }
+
+        .m-cell {
+            padding: 1rem 0.75rem; /* Reduzido o padding vertical */
+            border-bottom: 1px solid #f5f5f4;
+            border-right: 1px solid #f5f5f4;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center;     
+            gap: 0.5rem; /* Metade do espaço entre as caixas na mesma célula */
+        }
+
+        .bg-focus-col { background-color: #fffaf5; }
+
+        /* =========================================
+           NÓS E CAIXAS (MAIORES E MAIS LARGAS)
+           ========================================= */
+        .node-current {
+            background-color: #f5f5f4;
+            border: 1px solid #d6d3d1;
+            color: #44403c;
+            padding: 0.75rem 1rem; /* Mais compacto */
+            border-radius: 0.5rem;
+            font-size: 0.85rem; /* Ajustado para melhor leitura sem ocupar tanto */
+            font-weight: 700;
+            text-align: center;
+            width: 90%;
+            max-width: 360px;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+        }
+
+        .node-alert {
+            width: 95%;
+            max-width: 400px;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .node-info {
+            width: 90%;
+            max-width: 360px;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .node-solution {
+            border-radius: 0.5rem;
+            padding: 1.25rem; /* Ligeiramente mais compacto */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            position: relative;
+            border-left-width: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            background-color: white;
+            width: 95%;
+            max-width: 400px; 
+            transition: transform 0.2s ease;
+        }
+
+        .node-solution:hover {
+            transform: scale(1.02);
+        }
+
+        .arrow-down {
+            color: #a8a29e;
+            font-weight: 900;
+            text-align: center;
+            font-size: 1.5rem; /* Seta mais delicada */
+            margin: -0.25rem 0; /* Puxa os elementos para mais perto */
+            line-height: 1;
+        }
+
+        /* Detalhe Cards */
+        .info-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-list li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .feature-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-weight: 900;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header (Compactado) -->
+    <header class="bg-white border-b border-stone-200 shadow-sm sticky top-0 z-50">
+        <div class="w-full max-w-[1920px] mx-auto px-6 py-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div class="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+                <!-- Logo UX Group -->
+                <div class="flex items-center select-none">
+                    <span class="text-3xl font-black text-stone-900 tracking-tighter leading-none">UX</span>
+                    <span class="text-[0.65rem] font-bold text-stone-500 tracking-[0.25em] ml-1.5 mt-2 leading-none">GROUP</span>
+                </div>
+                
+                <div class="hidden md:block h-8 w-px bg-stone-300"></div>
+                
+                <!-- Títulos -->
+                <div>
+                    <h1 class="text-xl lg:text-2xl font-extrabold text-stone-900 tracking-tight leading-tight">Arquitetura de Soluções Logísticas</h1>
+                    <p class="text-stone-500 text-xs lg:text-sm mt-0.5 font-semibold uppercase tracking-wide">Integração Sistêmica do Ciclo de Pedido TMS</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 bg-stone-50 px-4 py-2 rounded border border-stone-200 shadow-inner">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                <span class="text-xs lg:text-sm font-bold text-stone-700">Foco: Gestão e Tracking do Redespacho</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content (Espaçamentos reduzidos) -->
+    <main class="flex-grow w-full max-w-[1920px] mx-auto px-6 py-4 flex flex-col gap-4">
+
+        <!-- Context Alert (Compacto) -->
+        <div class="bg-blue-50 border-l-8 border-blue-500 p-4 rounded-r-xl shadow-sm flex items-center gap-4">
+            <span class="text-3xl">🎯</span>
+            <div>
+                <p class="text-blue-900 text-sm lg:text-base leading-snug font-medium">
+                    <strong class="font-extrabold">Alinhamento Técnico:</strong> O <strong class="text-purple-700">Trux (TMS)</strong> assume o controle operacional (roteirização, romaneios, CTes). O <strong class="text-blue-700">Ondetah</strong> atua como torre externa, unificando o tracking sem interferir no fiscal. E o <strong class="text-emerald-700">Fusion</strong> blinda a margem na simulação.
+                </p>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="flex border-b-2 border-stone-300 flex-none">
+            <button onclick="switchTab('matrix')" id="btn-matrix" class="px-6 py-3 text-sm lg:text-base font-bold text-blue-700 border-b-4 border-blue-600 bg-blue-50/50 focus:outline-none transition-colors rounded-t-lg">
+                <span class="mr-2">📊</span> Fluxo de Integração (Matriz)
+            </button>
+            <button onclick="switchTab('details')" id="btn-details" class="px-6 py-3 text-sm lg:text-base font-bold text-stone-500 border-b-4 border-transparent hover:bg-stone-50 focus:outline-none transition-colors rounded-t-lg">
+                <span class="mr-2">🔍</span> Detalhamento Técnico dos Produtos
+            </button>
+        </div>
+
+        <!-- TAB 1: MATRIX CONTENT -->
+        <div id="content-matrix" class="block animate-fade-in flex-grow pb-8">
+            <section class="matrix-wrapper">
+                <div class="matrix-grid">
+                    
+                    <!-- ROW 0: HEADERS -->
+                    <div class="m-header bg-stone-100 border-b-2 border-r-2 border-stone-200">
+                        Sistemas ↓ | Etapas →
+                    </div>
+                    <div class="m-header text-sm lg:text-base">1. Simulação & Venda</div>
+                    <div class="m-header text-sm lg:text-base">2. Faturamento / WMS</div>
+                    <div class="m-header border-b-4 border-b-purple-500 text-sm lg:text-base">3. TMS: Execução & Doca</div>
+                    <div class="m-header border-b-4 border-b-blue-500 bg-focus-col text-blue-900 text-sm lg:text-base">4. Trânsito & Redespacho</div>
+                    <div class="m-header text-sm lg:text-base">5. Pós-Entrega & Auditoria</div>
+
+                    <!-- ROW 1: E-COMMERCE -->
+                    <div class="m-row-header">
+                        <span class="text-xs font-bold text-stone-400 uppercase tracking-widest">Camada Front</span>
+                        <span class="text-lg font-extrabold text-stone-800">Site / E-com</span>
+                    </div>
+                    <div class="m-cell">
+                        <div class="node-current">Cotação Padrão ERP (Cega)</div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node-solution border-emerald-500">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="bg-emerald-500 text-white text-xs font-bold px-2.5 py-1 rounded uppercase">Fase 2</span>
+                            </div>
+                            <h4 class="text-xl font-extrabold text-emerald-900">Fusion (API)</h4>
+                            <p class="text-sm font-semibold text-emerald-800 leading-snug">Simula o custo da malha real (incluindo redespacho) no momento do checkout.</p>
+                        </div>
+                    </div>
+                    <div class="m-cell"></div>
+                    <div class="m-cell"></div>
+                    <div class="m-cell bg-focus-col">
+                        <div class="node-current">Painel do Cliente Base</div>
+                        <div class="arrow-down">↓</div>
+                        <div class="bg-blue-100 border-2 border-blue-200 shadow-md node-info">
+                            <span class="text-lg font-extrabold text-blue-800 block mb-1">Recebe Status Unificado</span>
+                            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider bg-blue-200 px-2 py-1 rounded">Push API Ondetah</span>
+                        </div>
+                    </div>
+                    <div class="m-cell"></div>
+
+                    <!-- ROW 2: ERP & WMS -->
+                    <div class="m-row-header">
+                        <span class="text-xs font-bold text-stone-400 uppercase tracking-widest">Camada Core</span>
+                        <span class="text-lg font-extrabold text-stone-800">ERP & WMS</span>
+                    </div>
+                    <div class="m-cell"></div>
+                    <div class="m-cell">
+                        <div class="node-current">Pedido Criado no ERP</div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node-current bg-stone-200 border-stone-300">Emissão de NF</div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node-current">Picking no WMS</div>
+                    </div>
+                    <div class="m-cell"></div>
+                    <div class="m-cell bg-focus-col"></div>
+                    <div class="m-cell"></div>
+
+                    <!-- ROW 3: TMS INTERNO -->
+                    <div class="m-row-header">
+                        <span class="text-xs font-bold text-purple-400 uppercase tracking-widest">Operacional</span>
+                        <span class="text-lg font-extrabold text-purple-800">TMS (Interno)</span>
+                    </div>
+                    <div class="m-cell"></div>
+                    <div class="m-cell"></div>
+                    <div class="m-cell bg-purple-50/50">
+                        <div class="node-current">Leilão / Definição Manual</div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node-solution border-purple-500">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="bg-purple-600 text-white text-xs font-bold px-2.5 py-1 rounded uppercase">Fase 4 (Core)</span>
+                            </div>
+                            <h4 class="text-xl font-extrabold text-purple-900">Trux TMS</h4>
+                            <ul class="text-sm text-purple-800 font-bold space-y-2 mt-2">
+                                <li class="flex items-start gap-2"><span>✔</span> Gestão Leilão/Roteirização</li>
+                                <li class="flex items-start gap-2"><span>✔</span> Define Transportadora e Hub</li>
+                                <li class="flex items-start gap-2 bg-purple-100 p-2 rounded-lg text-purple-900 border border-purple-200"><span>✔</span> Emite Romaneio & CTe</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="m-cell bg-focus-col"></div>
+                    <div class="m-cell">
+                        <div class="node-current">Liberação Pagto. Frete</div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node-solution border-amber-500">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="bg-amber-500 text-white text-xs font-bold px-2.5 py-1 rounded uppercase">Fase 3</span>
+                            </div>
+                            <h4 class="text-xl font-extrabold text-amber-900">Conciliação</h4>
+                            <p class="text-sm font-semibold text-amber-800 leading-snug">Audita o CTe (Sefaz) vs Custo Simulado.</p>
+                        </div>
+                    </div>
+
+                    <!-- ROW 4: TRANSPORTE -->
+                    <div class="m-row-header !border-b-0">
+                        <span class="text-xs font-bold text-blue-400 uppercase tracking-widest">Externa</span>
+                        <span class="text-lg font-extrabold text-blue-800">Transporte</span>
+                    </div>
+                    <div class="m-cell !border-b-0"></div>
+                    <div class="m-cell !border-b-0"></div>
+                    <div class="m-cell !border-b-0"></div>
+                    <div class="m-cell bg-focus-col !border-b-0">
+                        <div class="bg-red-50 border-2 border-dashed border-red-300 text-red-800 node-alert">
+                            <span class="font-bold text-sm block mb-1">Operação Física (A→B→C)</span>
+                            <span class="bg-red-200 text-red-900 text-[0.7rem] font-extrabold px-2 py-0.5 rounded uppercase">Ponto Cego (Redespacho)</span>
+                        </div>
+                        <div class="arrow-down !text-blue-400">↓</div>
+                        <div class="node-solution border-blue-500 border-l-8 shadow-xl z-10 border-2">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded uppercase shadow">Fase 1 (Visibilidade)</span>
+                            </div>
+                            <h4 class="text-xl font-extrabold text-blue-900">Ondetah</h4>
+                            <p class="text-sm font-bold text-blue-800 mb-3 leading-snug">Integra parceiros da malha para tracking unificado ponta a ponta.</p>
+                            <div class="bg-red-50 border-2 border-red-200 rounded-lg p-2 text-xs text-red-700 font-extrabold text-center uppercase tracking-wide">
+                                Somente Tracking.<br>Sem CTe/Romaneio.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="m-cell !border-b-0"></div>
+
+                </div>
+            </section>
+        </div>
+
+        <!-- TAB 2: DETAILED CARDS CONTENT -->
+        <div id="content-details" class="hidden">
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-12">
+                
+                <!-- Card 1: Ondetah -->
+                <div class="info-card bg-white rounded-2xl border border-stone-200 overflow-hidden flex flex-col shadow-lg">
+                    <div class="bg-blue-600 p-8">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-sm uppercase text-blue-200 font-bold tracking-widest">Tracking do Redespacho</span>
+                            <span class="text-white bg-blue-500 px-4 py-1.5 rounded text-sm font-bold">Fase 1</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-white">1. Ondetah</h3>
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-stone-50">
+                        <p class="text-lg font-semibold text-stone-800 mb-8 leading-relaxed">
+                            Centraliza a visibilidade do redespacho, integrando-se via API/EDI (conforme disponibilidade e homologação dos transportadores) para consolidar rastreios e ocorrências em uma visão única da jornada da carga.
+                        </p>
+                        <div class="mt-auto border-t border-stone-200 pt-6">
+                            <span class="block text-sm font-bold text-stone-400 uppercase mb-4">Funcionalidades Core:</span>
+                            <ul class="text-base text-stone-700 font-medium feature-list space-y-4">
+                                <li class="text-blue-700">Consolidação de múltiplos rastreios (ex.: A → B + B → C) em uma linha do tempo única.</li>
+                                <li class="text-blue-700">Tradução e padronização de ocorrências conforme mapeamento por transportador.</li>
+                                <li class="text-blue-700">Monitoramento de SLA e gestão de exceções operacionais.</li>
+                                <li class="text-blue-700">Integração via API/Webhook para atualização de status em ERP e e-commerce, quando aplicável.</li>
+                                <li class="text-blue-700">Torre de controle operacional com visão centralizada da jornada logística.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Fusion -->
+                <div class="info-card bg-white rounded-2xl border border-stone-200 overflow-hidden flex flex-col shadow-lg">
+                    <div class="bg-emerald-600 p-8">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-sm uppercase text-emerald-200 font-bold tracking-widest">Proteção de Margem</span>
+                            <span class="text-white bg-emerald-500 px-4 py-1.5 rounded text-sm font-bold">Fase 2</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-white">2. Fusion</h3>
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-stone-50">
+                        <p class="text-lg font-semibold text-stone-800 mb-8 leading-relaxed">
+                            Motor de cotação e regras logísticas que garante previsibilidade de custo e coerência operacional, evitando divergências entre o frete ofertado ao cliente e o modelo real de execução (direto ou redespacho).
+                        </p>
+                        <div class="mt-auto border-t border-stone-200 pt-6">
+                            <span class="block text-sm font-bold text-stone-400 uppercase mb-4">Funcionalidades Core:</span>
+                            <ul class="text-base text-stone-700 font-medium feature-list space-y-4">
+                                <li class="text-emerald-700">Simulação comparativa entre rotas diretas e rotas com consolidação/redespacho, quando configurado.</li>
+                                <li class="text-emerald-700">Cálculo de prazo (SLA) considerando regras e parametrizações operacionais.</li>
+                                <li class="text-emerald-700">Gestão de tabelas de frete (cubagem, faixas, adicionais e exceções).</li>
+                                <li class="text-emerald-700">Parametrização de regras comerciais e operacionais por transportador.</li>
+                                <li class="text-emerald-700">Performance adequada para uso em checkout (SLA validado em ambiente do projeto).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Conciliação -->
+                <div class="info-card bg-white rounded-2xl border border-stone-200 overflow-hidden flex flex-col shadow-lg">
+                    <div class="bg-amber-500 p-8">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-sm uppercase text-amber-100 font-bold tracking-widest">Auditoria Financeira</span>
+                            <span class="text-white bg-amber-400 px-4 py-1.5 rounded text-sm font-bold">Fase 3</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-white">3. Conciliação</h3>
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-stone-50">
+                        <p class="text-lg font-semibold text-stone-800 mb-8 leading-relaxed">
+                            Módulo de auditoria financeira do frete, reduzindo vazamento de caixa causado por divergências entre o custo simulado/contratado e o custo faturado pelas transportadoras.
+                        </p>
+                        <div class="mt-auto border-t border-stone-200 pt-6">
+                            <span class="block text-sm font-bold text-stone-400 uppercase mb-4">Funcionalidades Core:</span>
+                            <ul class="text-base text-stone-700 font-medium feature-list space-y-4">
+                                <li class="text-amber-700">Importação de documentos fiscais e financeiros (XML/planilhas) via ERP, transportador ou upload controlado, conforme modelo do cliente.</li>
+                                <li class="text-amber-700">Cruzamento entre custo simulado/contratado versus custo faturado (CTe/DOCCOB).</li>
+                                <li class="text-amber-700">Identificação de divergências como taxas não acordadas, diferenças de cubagem e adicionais.</li>
+                                <li class="text-amber-700">Geração de relatórios de divergência e base estruturada para contestação ou aprovação financeira.</li>
+                                <li class="text-amber-700">Integração com ERP para apoio ao processo de pagamento.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Trux -->
+                <div class="info-card bg-white rounded-2xl border border-stone-200 overflow-hidden flex flex-col border-b-8 border-b-purple-500 shadow-lg">
+                    <div class="bg-purple-600 p-8">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-sm uppercase text-purple-200 font-bold tracking-widest">Governança Operacional</span>
+                            <span class="text-white bg-purple-500 px-4 py-1.5 rounded text-sm font-bold">Fase 4</span>
+                        </div>
+                        <h3 class="text-3xl font-black text-white">4. Trux TMS</h3>
+                    </div>
+                    <div class="p-8 flex-grow flex flex-col bg-stone-50">
+                        <p class="text-lg font-semibold text-stone-800 mb-8 leading-relaxed">
+                            TMS voltado à execução e governança operacional e fiscal do transporte, centralizando despacho, gestão de viagens e documentos conforme as regras previamente definidas.
+                        </p>
+                        <div class="mt-auto border-t border-stone-200 pt-6">
+                            <span class="block text-sm font-bold text-stone-400 uppercase mb-4">Funcionalidades Core:</span>
+                            <ul class="text-base text-stone-700 font-medium feature-list space-y-4">
+                                <li class="text-purple-700">Gestão de viagens, embarques, ocorrências e status operacionais.</li>
+                                <li class="text-purple-700">Geração de romaneios e documentos operacionais.</li>
+                                <li class="text-purple-700">Emissão e gestão fiscal (ex.: CTe e documentos aplicáveis, conforme escopo do projeto).</li>
+                                <li class="text-purple-700">Parametrização de hubs e regras de redespacho.</li>
+                                <li class="text-purple-700">
+                                    Aplicativo do motorista com:
+                                    <ul class="ml-5 mt-2 space-y-1.5 list-disc text-[0.95rem] opacity-90 font-normal">
+                                        <li>Disponibilidade de carga</li>
+                                        <li>Visualização de valor de frete e impostos</li>
+                                        <li>Rastreamento em tempo real (condicionado ao uso do aplicativo)</li>
+                                        <li>Informações financeiras vinculadas à viagem</li>
+                                    </ul>
+                                </li>
+                                <li class="text-purple-700">Execução alinhada às regras e decisões definidas no Fusion, quando integrados.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+
+    </main>
+
+    <script>
+        function switchTab(tabId) {
+            const tabs = ['matrix', 'details'];
+            
+            tabs.forEach(id => {
+                const content = document.getElementById(`content-${id}`);
+                const btn = document.getElementById(`btn-${id}`);
+                
+                if (id === tabId) {
+                    // Show Content
+                    content.classList.remove('hidden');
+                    content.classList.add('block', 'animate-fade-in');
+                    
+                    // Activate Tab Button styling
+                    btn.classList.add('text-blue-700', 'border-b-4', 'border-blue-600', 'bg-blue-50/50');
+                    btn.classList.remove('text-stone-500', 'border-transparent', 'hover:bg-stone-50');
+                } else {
+                    // Hide Content
+                    content.classList.add('hidden');
+                    content.classList.remove('block', 'animate-fade-in');
+                    
+                    // Deactivate Tab Button styling
+                    btn.classList.remove('text-blue-700', 'border-b-4', 'border-blue-600', 'bg-blue-50/50');
+                    btn.classList.add('text-stone-500', 'border-transparent', 'hover:bg-stone-50');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
