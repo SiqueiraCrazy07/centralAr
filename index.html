@@ -218,7 +218,7 @@
       .page-shell{ padding-left:1.5rem; padding-right:1.5rem; }
     }
 
-    /* ===== Detalhamento (layout antigo) ===== */
+    /* ===== Detalhamento ===== */
     .details-shell .info-card{
       transition: transform 0.18s ease, box-shadow 0.18s ease;
     }
@@ -256,17 +256,37 @@
     .details-compact .info-card .text-sm.font-bold{ font-size: 0.72rem !important; padding: 0.35rem 0.65rem !important; }
     .details-compact .info-card .text-sm.uppercase{ font-size: 0.70rem !important; }
 
-    /* Print */
-    @page{ size: A4 landscape; margin: 10mm; }
+    /* =========================
+       IMPRESSÃO (1 página com o FLUXO)
+       ========================= */
+    @page{ size: A4 landscape; margin: 8mm; }
     @media print{
+      /* remove cor de fundo e sombras */
       body{ background:#fff !important; color:#000 !important; }
       header{ position: static !important; box-shadow:none !important; border:none !important; }
       .no-print{ display:none !important; }
-      .matrix-wrapper{ box-shadow:none !important; border:1px solid #ddd !important; overflow:visible !important; height:auto !important; }
-      .node-solution, .node-current, .info-card{ box-shadow:none !important; }
+
+      /* esconde detalhamento ao imprimir (para sair o fluxo inteiro em 1 página) */
+      .details-shell{ display:none !important; }
+
+      /* remove padding do shell para maximizar área */
+      .page-shell{ max-width:none !important; padding:0 !important; }
+
+      /* fluxo sempre em 1 página */
+      .matrix-wrapper{
+        box-shadow:none !important;
+        border:1px solid #ddd !important;
+        overflow:visible !important;
+        height:auto !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      .matrix-scale{
+        zoom: 1 !important;   /* será ajustado via JS antes do print */
+        transform:none !important;
+      }
+      .node-solution, .node-current{ box-shadow:none !important; }
       .node-solution:hover{ transform:none !important; }
-      .matrix-scale{ zoom: 1 !important; }
-      .matrix-grid{ zoom: 0.90; min-width: 0 !important; }
     }
   </style>
 </head>
@@ -293,20 +313,18 @@
         </div>
       </div>
 
+      <!-- REMOVIDO: ícones/botões extras. Mantido apenas o status e o botão de imprimir -->
       <div class="flex items-center gap-2 flex-wrap">
         <div class="flex items-center gap-2 bg-stone-50 px-4 py-2 rounded border border-stone-200 shadow-inner">
           <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
           <span class="text-xs lg:text-sm font-black text-stone-700">Foco: Gestão e Tracking do Redespacho</span>
         </div>
 
-        <button class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
-                onclick="toggleFullScreen()" title="Tela cheia">⛶ Tela cheia</button>
-
-        <button class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
-                onclick="resetScale()" title="Recalcular ajuste">⟳ Ajustar</button>
-
-        <button class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
-                onclick="window.print()" title="Imprimir">🖨️ Imprimir</button>
+        <button
+          class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
+          onclick="printFlowOnePage()"
+          title="Imprimir Fluxo"
+        >Imprimir</button>
       </div>
     </div>
   </header>
@@ -476,7 +494,7 @@
       </div>
     </section>
 
-    <!-- DETALHAMENTO -->
+    <!-- DETALHAMENTO (fica na tela, mas não imprime) -->
     <section class="details-shell details-compact pb-10">
       <div class="flex items-end justify-between gap-3 mt-2">
         <div>
@@ -607,33 +625,27 @@
   </main>
 
   <script>
-    // FIT robusto: usa clientWidth/clientHeight do wrapper + margens de segurança
+    // FIT robusto: usa largura do wrapper + margens de segurança
     function fitMatrixToScreen(){
       const wrapper = document.getElementById('matrixWrapper');
       const scaleEl = document.getElementById('matrixScale');
       const grid = document.getElementById('matrixGrid');
       if (!wrapper || !scaleEl || !grid) return;
 
-      // Reset
       scaleEl.style.zoom = '';
       scaleEl.style.transform = 'none';
 
-      // Margem de segurança (evita corte em produção)
-      const SAFE_PAD_X = 18;   // px
-      const SAFE_PAD_Y = 14;   // px
+      const SAFE_PAD_X = 18;
+      const SAFE_PAD_Y = 14;
 
-      // Disponível = tamanho real do wrapper (não depende de left/top)
       const availableW = Math.max(0, wrapper.clientWidth - SAFE_PAD_X);
-      // altura disponível na viewport a partir do topo do wrapper
       const wrapperTop = wrapper.getBoundingClientRect().top;
       const availableH = Math.max(0, window.innerHeight - wrapperTop - SAFE_PAD_Y);
 
-      // Tamanho do conteúdo (medido no natural)
       const contentW = grid.scrollWidth;
       const contentH = grid.scrollHeight;
 
       let scale = Math.min(1, availableW / contentW, availableH / contentH);
-      // segurança extra contra arredondamento (evita "cortar 1 coluna")
       scale = Math.max(0.5, Math.floor(scale * 100) / 100 - 0.01);
 
       document.body.classList.toggle('mode-compact', scale < 0.85);
@@ -657,25 +669,60 @@
           scaleEl.style.transformOrigin = 'top left';
         }
 
-        // Altura do wrapper acompanha (sem cortar por baixo)
         wrapper.style.height = Math.ceil(newH * newScale + SAFE_PAD_Y) + 'px';
       });
     }
 
-    function resetScale(){
-      requestAnimationFrame(fitMatrixToScreen);
-    }
+    // Ajuste específico para imprimir o fluxo em 1 página (landscape)
+    function printFlowOnePage(){
+      const scaleEl = document.getElementById('matrixScale');
+      const grid = document.getElementById('matrixGrid');
+      if (!scaleEl || !grid) { window.print(); return; }
 
-    function toggleFullScreen(){
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen?.();
-      } else {
-        document.exitFullscreen?.();
+      // Calcula escala para A4 landscape com margem 8mm
+      const DPI = 96;                 // CSS px per inch (aprox)
+      const MM_PER_IN = 25.4;
+
+      // A4 landscape: 297mm x 210mm
+      const PAGE_W_MM = 297;
+      const PAGE_H_MM = 210;
+      const MARGIN_MM = 8 * 2;        // esquerda+direita / cima+baixo (já definido no @page)
+
+      const printableWpx = ((PAGE_W_MM - MARGIN_MM) / MM_PER_IN) * DPI;
+      const printableHpx = ((PAGE_H_MM - MARGIN_MM) / MM_PER_IN) * DPI;
+
+      // reset para medir natural
+      const prevZoom = scaleEl.style.zoom;
+      const prevTransform = scaleEl.style.transform;
+      scaleEl.style.zoom = '';
+      scaleEl.style.transform = 'none';
+
+      const contentW = grid.scrollWidth;
+      const contentH = grid.scrollHeight;
+
+      let printScale = Math.min(printableWpx / contentW, printableHpx / contentH);
+      // segurança anti-corte
+      printScale = Math.max(0.35, Math.floor(printScale * 100) / 100 - 0.01);
+
+      // aplica
+      const supportsZoom = typeof scaleEl.style.zoom !== 'undefined';
+      if (supportsZoom) scaleEl.style.zoom = String(printScale);
+      else {
+        scaleEl.style.transform = `scale(${printScale})`;
+        scaleEl.style.transformOrigin = 'top left';
       }
-      setTimeout(() => fitMatrixToScreen(), 250);
+
+      // dispara impressão
+      setTimeout(() => {
+        window.print();
+        // restaura
+        scaleEl.style.zoom = prevZoom;
+        scaleEl.style.transform = prevTransform;
+        setTimeout(() => fitMatrixToScreen(), 50);
+      }, 80);
     }
 
-    // Reajuste com throttle simples
+    // resize throttle
     let resizeTO = null;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTO);
@@ -684,7 +731,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       fitMatrixToScreen();
-      // Ajuste extra pós-fontes/imagens (produção costuma atrasar)
       setTimeout(fitMatrixToScreen, 250);
       setTimeout(fitMatrixToScreen, 900);
     });
