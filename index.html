@@ -10,24 +10,20 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
     :root{
-      /* Grid sizing (estável) */
       --col-left: 160px;
       --col-min: 220px;
       --col-ideal: 18vw;
       --col-max: 300px;
 
-      /* Density */
       --cell-pad-y: 0.65rem;
       --cell-pad-x: 0.65rem;
       --cell-gap: 0.45rem;
       --cell-minh: 132px;
 
-      /* Nodes */
       --node-radius: 0.55rem;
       --node-pad-y: 0.6rem;
       --node-pad-x: 0.85rem;
 
-      /* Visual */
       --shadow-soft: 0 10px 25px -10px rgba(0,0,0,.18);
     }
 
@@ -44,7 +40,6 @@
     }
     .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
 
-    /* Clamp texto */
     .clamp-3{
       display: -webkit-box;
       -webkit-line-clamp: 3;
@@ -53,25 +48,25 @@
     }
 
     /* =========================
-       MATRIZ: sem scroll + fit (ZOOM)
+       MATRIZ
        ========================= */
     .matrix-wrapper{
-      overflow:hidden;                 /* sem scrollbar */
+      overflow:hidden;
       border-radius: 0.85rem;
       background:#fff;
       border:1px solid #e7e5e4;
       box-shadow: var(--shadow-soft);
       position:relative;
       width:100%;
-      height:auto;                     /* altura controlada via JS */
+      height:auto;  /* controlada via JS */
       min-height:0;
     }
 
-    /* ESCALA via zoom (mais nítido que transform) */
+    /* Conteúdo em max-content para medir corretamente */
     .matrix-scale{
-      transform: none;                 /* evita blur */
-      width: max-content;
-      height: max-content;
+      transform:none;
+      width:max-content;
+      height:max-content;
     }
 
     .matrix-grid{
@@ -212,7 +207,6 @@
     body.mode-ultra .node-current{ font-size:0.74rem; }
     body.mode-ultra .m-header{ font-size:0.72rem; }
 
-    /* Shell */
     .page-shell{
       width:100%;
       max-width:1600px;
@@ -245,72 +239,22 @@
       font-weight:900;
     }
 
-    /* =========================
-       DETALHAMENTO - COMPACTO
-       (reduz a escrita sem alterar o resto do layout)
-       ========================= */
+    /* Detalhamento compacto */
     .details-compact .info-card .bg-blue-600,
     .details-compact .info-card .bg-emerald-600,
     .details-compact .info-card .bg-amber-500,
-    .details-compact .info-card .bg-purple-600{
-      padding: 1.25rem !important; /* era p-8 */
-    }
-
-    .details-compact .info-card > div.p-8{
-      padding: 1.25rem !important; /* corpo: era p-8 */
-    }
-
-    .details-compact h2{
-      font-size: 1.05rem !important;
-      line-height: 1.2 !important;
-    }
-
-    .details-compact p.text-stone-500{
-      font-size: 0.80rem !important;
-    }
-
-    .details-compact .info-card h3{
-      font-size: 1.45rem !important; /* era 3xl */
-      line-height: 1.15 !important;
-    }
-
-    .details-compact .info-card p.text-lg{
-      font-size: 0.95rem !important;
-      line-height: 1.45 !important;
-      margin-bottom: 1.0rem !important; /* era mb-8 */
-    }
-
-    .details-compact .info-card .border-t{
-      padding-top: 1rem !important; /* era pt-6 */
-    }
-
-    .details-compact .info-card span.block.text-sm{
-      font-size: 0.72rem !important;
-      margin-bottom: 0.6rem !important;
-      letter-spacing: 0.06em !important;
-    }
-
-    .details-compact .feature-list{
-      font-size: 0.88rem !important;
-      line-height: 1.4 !important;
-    }
-
-    .details-compact .feature-list li{
-      margin-bottom: 0.45rem !important;
-    }
-
-    .details-compact .feature-list.space-y-4 > * + *{
-      margin-top: 0.5rem !important; /* era space-y-4 */
-    }
-
-    .details-compact .info-card .text-sm.font-bold{
-      font-size: 0.72rem !important;
-      padding: 0.35rem 0.65rem !important;
-    }
-
-    .details-compact .info-card .text-sm.uppercase{
-      font-size: 0.70rem !important;
-    }
+    .details-compact .info-card .bg-purple-600{ padding: 1.25rem !important; }
+    .details-compact .info-card > div.p-8{ padding: 1.25rem !important; }
+    .details-compact h2{ font-size: 1.05rem !important; line-height: 1.2 !important; }
+    .details-compact p.text-stone-500{ font-size: 0.80rem !important; }
+    .details-compact .info-card h3{ font-size: 1.45rem !important; line-height: 1.15 !important; }
+    .details-compact .info-card p.text-lg{ font-size: 0.95rem !important; line-height: 1.45 !important; margin-bottom: 1rem !important; }
+    .details-compact .info-card .border-t{ padding-top: 1rem !important; }
+    .details-compact .info-card span.block.text-sm{ font-size: 0.72rem !important; margin-bottom: .6rem !important; letter-spacing: .06em !important; }
+    .details-compact .feature-list{ font-size: 0.88rem !important; line-height: 1.4 !important; }
+    .details-compact .feature-list.space-y-4 > * + *{ margin-top: 0.5rem !important; }
+    .details-compact .info-card .text-sm.font-bold{ font-size: 0.72rem !important; padding: 0.35rem 0.65rem !important; }
+    .details-compact .info-card .text-sm.uppercase{ font-size: 0.70rem !important; }
 
     /* Print */
     @page{ size: A4 landscape; margin: 10mm; }
@@ -318,35 +262,17 @@
       body{ background:#fff !important; color:#000 !important; }
       header{ position: static !important; box-shadow:none !important; border:none !important; }
       .no-print{ display:none !important; }
-
-      .matrix-wrapper{
-        box-shadow:none !important;
-        border:1px solid #ddd !important;
-        overflow:visible !important;
-        height:auto !important;
-      }
+      .matrix-wrapper{ box-shadow:none !important; border:1px solid #ddd !important; overflow:visible !important; height:auto !important; }
       .node-solution, .node-current, .info-card{ box-shadow:none !important; }
       .node-solution:hover{ transform:none !important; }
-
       .matrix-scale{ zoom: 1 !important; }
       .matrix-grid{ zoom: 0.90; min-width: 0 !important; }
-
-      .details-compact .info-card .bg-blue-600,
-      .details-compact .info-card .bg-emerald-600,
-      .details-compact .info-card .bg-amber-500,
-      .details-compact .info-card .bg-purple-600{
-        padding: 0.9rem !important;
-      }
-      .details-compact .info-card > div.p-8{
-        padding: 0.9rem !important;
-      }
     }
   </style>
 </head>
 
 <body class="min-h-screen flex flex-col">
 
-  <!-- Header (layout antigo) -->
   <header class="bg-white border-b border-stone-200 shadow-sm sticky top-0 z-50">
     <div class="page-shell py-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
       <div class="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
@@ -373,30 +299,20 @@
           <span class="text-xs lg:text-sm font-black text-stone-700">Foco: Gestão e Tracking do Redespacho</span>
         </div>
 
-        <button
-          class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
-          onclick="toggleFullScreen()"
-          title="Tela cheia"
-        >⛶ Tela cheia</button>
+        <button class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
+                onclick="toggleFullScreen()" title="Tela cheia">⛶ Tela cheia</button>
 
-        <button
-          class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
-          onclick="resetScale()"
-          title="Recalcular ajuste"
-        >⟳ Ajustar</button>
+        <button class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
+                onclick="resetScale()" title="Recalcular ajuste">⟳ Ajustar</button>
 
-        <button
-          class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
-          onclick="window.print()"
-          title="Imprimir"
-        >🖨️ Imprimir</button>
+        <button class="no-print px-3 py-2 rounded border border-stone-200 bg-white hover:bg-stone-50 text-xs font-extrabold text-stone-700"
+                onclick="window.print()" title="Imprimir">🖨️ Imprimir</button>
       </div>
     </div>
   </header>
 
   <main class="flex-grow page-shell py-4 flex flex-col gap-5">
 
-    <!-- Context Alert (texto revisado) -->
     <div class="bg-blue-50 border-l-8 border-blue-500 p-4 rounded-r-xl shadow-sm flex items-center gap-4">
       <span class="text-3xl">🎯</span>
       <div>
@@ -409,12 +325,11 @@
       </div>
     </div>
 
-    <!-- MATRIZ (layout antigo) -->
+    <!-- MATRIZ -->
     <section class="matrix-wrapper animate-fade-in" id="matrixWrapper">
       <div class="matrix-scale" id="matrixScale">
         <div class="matrix-grid" id="matrixGrid">
 
-          <!-- Headers -->
           <div class="m-header bg-stone-100 border-b-2 border-r-2 border-stone-200">Sistemas ↓ | Etapas →</div>
           <div class="m-header text-sm lg:text-[0.95rem]">1. Simulação &amp; Venda</div>
           <div class="m-header text-sm lg:text-[0.95rem]">2. Faturamento / WMS</div>
@@ -561,7 +476,7 @@
       </div>
     </section>
 
-    <!-- DETALHAMENTO (mesmo layout, mais compacto) -->
+    <!-- DETALHAMENTO -->
     <section class="details-shell details-compact pb-10">
       <div class="flex items-end justify-between gap-3 mt-2">
         <div>
@@ -572,7 +487,6 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 pt-4">
 
-        <!-- Ondetah -->
         <div class="info-card bg-white rounded-2xl border border-stone-200 overflow-hidden flex flex-col shadow-lg">
           <div class="bg-blue-600 p-8">
             <div class="flex justify-between items-center mb-3">
@@ -599,7 +513,6 @@
           </div>
         </div>
 
-        <!-- Fusion -->
         <div class="info-card bg-white rounded-2xl border border-stone-200 overflow-hidden flex flex-col shadow-lg">
           <div class="bg-emerald-600 p-8">
             <div class="flex justify-between items-center mb-3">
@@ -627,7 +540,6 @@
           </div>
         </div>
 
-        <!-- Conciliação -->
         <div class="info-card bg-white rounded-2xl border border-stone-200 overflow-hidden flex flex-col shadow-lg">
           <div class="bg-amber-500 p-8">
             <div class="flex justify-between items-center mb-3">
@@ -654,7 +566,6 @@
           </div>
         </div>
 
-        <!-- Trux -->
         <div class="info-card bg-white rounded-2xl border border-stone-200 overflow-hidden flex flex-col border-b-8 border-b-purple-500 shadow-lg">
           <div class="bg-purple-600 p-8">
             <div class="flex justify-between items-center mb-3">
@@ -696,30 +607,34 @@
   </main>
 
   <script>
-    // Fit-to-screen usando ZOOM (mais nítido que transform)
+    // FIT robusto: usa clientWidth/clientHeight do wrapper + margens de segurança
     function fitMatrixToScreen(){
       const wrapper = document.getElementById('matrixWrapper');
       const scaleEl = document.getElementById('matrixScale');
       const grid = document.getElementById('matrixGrid');
       if (!wrapper || !scaleEl || !grid) return;
 
+      // Reset
       scaleEl.style.zoom = '';
       scaleEl.style.transform = 'none';
 
-      const rect = wrapper.getBoundingClientRect();
-      const viewportW = document.documentElement.clientWidth;
-      const viewportH = window.innerHeight;
+      // Margem de segurança (evita corte em produção)
+      const SAFE_PAD_X = 18;   // px
+      const SAFE_PAD_Y = 14;   // px
 
-      const paddingBottom = 16;
+      // Disponível = tamanho real do wrapper (não depende de left/top)
+      const availableW = Math.max(0, wrapper.clientWidth - SAFE_PAD_X);
+      // altura disponível na viewport a partir do topo do wrapper
+      const wrapperTop = wrapper.getBoundingClientRect().top;
+      const availableH = Math.max(0, window.innerHeight - wrapperTop - SAFE_PAD_Y);
 
-      const availableW = viewportW - rect.left;
-      const availableH = viewportH - rect.top - paddingBottom;
-
+      // Tamanho do conteúdo (medido no natural)
       const contentW = grid.scrollWidth;
       const contentH = grid.scrollHeight;
 
       let scale = Math.min(1, availableW / contentW, availableH / contentH);
-      scale = Math.floor(scale * 100) / 100;
+      // segurança extra contra arredondamento (evita "cortar 1 coluna")
+      scale = Math.max(0.5, Math.floor(scale * 100) / 100 - 0.01);
 
       document.body.classList.toggle('mode-compact', scale < 0.85);
       document.body.classList.toggle('mode-ultra', scale < 0.75);
@@ -729,7 +644,7 @@
         const newH = grid.scrollHeight;
 
         let newScale = Math.min(1, availableW / newW, availableH / newH);
-        newScale = Math.floor(newScale * 100) / 100;
+        newScale = Math.max(0.5, Math.floor(newScale * 100) / 100 - 0.01);
 
         const supportsZoom = typeof scaleEl.style.zoom !== 'undefined';
 
@@ -742,7 +657,8 @@
           scaleEl.style.transformOrigin = 'top left';
         }
 
-        wrapper.style.height = Math.ceil(newH * newScale) + 'px';
+        // Altura do wrapper acompanha (sem cortar por baixo)
+        wrapper.style.height = Math.ceil(newH * newScale + SAFE_PAD_Y) + 'px';
       });
     }
 
@@ -759,19 +675,18 @@
       setTimeout(() => fitMatrixToScreen(), 250);
     }
 
-    // Evita efeito "zoom inverso" (não briga com zoom do navegador)
-    let lastDevicePixelRatio = window.devicePixelRatio;
-
+    // Reajuste com throttle simples
+    let resizeTO = null;
     window.addEventListener('resize', () => {
-      const zoomChanged = window.devicePixelRatio !== lastDevicePixelRatio;
-      lastDevicePixelRatio = window.devicePixelRatio;
-
-      if (zoomChanged) return;
-      fitMatrixToScreen();
+      clearTimeout(resizeTO);
+      resizeTO = setTimeout(fitMatrixToScreen, 80);
     });
 
     window.addEventListener('DOMContentLoaded', () => {
       fitMatrixToScreen();
+      // Ajuste extra pós-fontes/imagens (produção costuma atrasar)
+      setTimeout(fitMatrixToScreen, 250);
+      setTimeout(fitMatrixToScreen, 900);
     });
   </script>
 </body>
